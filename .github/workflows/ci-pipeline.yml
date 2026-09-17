@@ -209,10 +209,5 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
           IMAGE_REFS: ghcr.io/${{ github.repository_owner }}/docs:${{ github.ref_name }}
-          RELEASE_BUILD_COMMAND: >-
-            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
-            -o "$RUNNER_TEMP/release-assets/docs-svc" ./cmd/docs-svc
-            && zip -j "$RUNNER_TEMP/release-assets/docs-svc-${{ github.ref_name }}.zip"
-            "$RUNNER_TEMP/release-assets/docs-svc"
           GH_TOKEN: ${{ github.token }}
         run: .github/scripts/publish-release-artifacts.sh
