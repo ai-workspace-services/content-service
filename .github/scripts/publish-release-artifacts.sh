@@ -59,5 +59,5 @@ if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
   if ! gh release view "${release_tag}" >/dev/null 2>&1; then
     retry gh release create "${release_tag}" --title "${GITHUB_REPOSITORY} ${release_tag}" --notes "Automated CI release for ${GITHUB_SHA}."
   fi
-  retry gh release upload "${release_tag}" "${assets_dir}"/* --clobber
+  for file in "${assets_dir}"/*; do retry gh release upload "${release_tag}" "$file" --clobber; done
 fi
