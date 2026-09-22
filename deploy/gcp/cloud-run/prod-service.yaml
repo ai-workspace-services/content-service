@@ -27,7 +27,7 @@ spec:
         - name: KNOWLEDGE_REPO_PATH
           value: /knowledge
         - name: KNOWLEDGE_REPO_URL
-          value: https://github.com/haitaopanhq/knowledge.git
+          value: https://github.com/ai-workspace-services/knowledge.git
         - name: KNOWLEDGE_REPO_REF
           value: main
         - name: DOCS_RELOAD_INTERVAL
