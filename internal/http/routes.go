@@ -378,8 +378,12 @@ func (a *App) handleBlogs(w http.ResponseWriter, r *http.Request) {
 	category := strings.TrimSpace(r.URL.Query().Get("category"))
 	page := parseInt(r.URL.Query().Get("page"), 1)
 	pageSize := parseInt(r.URL.Query().Get("pageSize"), 10)
-	if pageSize > 50 {
-		pageSize = 50
+	// The Portal blog listing and sitemap intentionally request one complete
+	// snapshot so client-side pagination can cover every knowledge post. Keep a
+	// finite upper bound for callers while allowing the current repository to be
+	// indexed beyond the old 50-post truncation.
+	if pageSize > 500 {
+		pageSize = 500
 	}
 
 	filtered := make([]content.BlogPost, 0)
