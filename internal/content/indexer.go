@@ -271,8 +271,11 @@ func (i *Indexer) buildBlogs() ([]BlogPost, map[string]BlogPost, []BlogCategory,
 	}
 	posts := make([]BlogPost, 0)
 	postMap := make(map[string]BlogPost)
-	categoryMap := make(map[string]BlogCategory)
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+	categoryMap, err := discoverBlogCategories(root)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -309,6 +312,41 @@ func (i *Indexer) buildBlogs() ([]BlogPost, map[string]BlogPost, []BlogCategory,
 		return strings.Compare(a.Key, b.Key)
 	})
 	return posts, postMap, categories, nil
+}
+
+// discoverBlogCategories seeds the category list from the content directory
+// layout. This keeps empty categories visible in the API and lets a newly
+// added top-level knowledge directory appear without a Portal code change.
+func discoverBlogCategories(root string) (map[string]BlogCategory, error) {
+	categoryMap := make(map[string]BlogCategory)
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") || entry.Name() == "website" {
+			continue
+		}
+		if entry.Name() == "00-global" {
+			children, err := os.ReadDir(filepath.Join(root, entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+			for _, child := range children {
+				if !child.IsDir() || strings.HasPrefix(child.Name(), ".") {
+					continue
+				}
+				if category := resolveBlogCategory([]string{entry.Name(), child.Name()}); category != nil {
+					categoryMap[category.Key] = *category
+				}
+			}
+			continue
+		}
+		if category := resolveBlogCategory([]string{entry.Name()}); category != nil {
+			categoryMap[category.Key] = *category
+		}
+	}
+	return categoryMap, nil
 }
 
 type rawProductFrontmatter struct {
@@ -677,6 +715,13 @@ func resolveBlogCategory(segments []string) *BlogCategory {
 		}
 		return &BlogCategory{Key: "insight", Label: "资讯"}
 	default:
-		return nil
+		// Preserve newly added knowledge directories as categories. Known
+		// domains above keep their editorial labels while unknown domains use
+		// a deterministic humanized label.
+		key := regexp.MustCompile(`^\d+[-_]*`).ReplaceAllString(segments[0], "")
+		if key == "" {
+			return nil
+		}
+		return &BlogCategory{Key: key, Label: humanize(key)}
 	}
 }
