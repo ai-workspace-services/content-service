@@ -30,6 +30,35 @@ func TestBuildCreatesStableSourceHashes(t *testing.T) {
 	}
 }
 
+func TestBlogCategoriesFollowKnowledgeDirectories(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, "content", "06-workshops"), 0o755); err != nil {
+		t.Fatalf("mkdir empty category: %v", err)
+	}
+	writeIndexerFile(t, filepath.Join(repo, "content", "01-id-security", "vault.md"), "---\ntitle: Vault\n---\n# Vault\n\nContent")
+	writeIndexerFile(t, filepath.Join(repo, "content", "00-global", "news", "update.md"), "---\ntitle: Update\n---\n# Update\n\nContent")
+
+	snapshot, err := NewIndexer(repo).Build()
+	if err != nil {
+		t.Fatalf("build error: %v", err)
+	}
+
+	want := map[string]string{
+		"identity":  "ID & Security",
+		"insight":   "资讯",
+		"workshops": "Workshops",
+	}
+	got := make(map[string]string, len(snapshot.BlogCategories))
+	for _, category := range snapshot.BlogCategories {
+		got[category.Key] = category.Label
+	}
+	for key, label := range want {
+		if got[key] != label {
+			t.Errorf("category %q = %q, want %q (all=%v)", key, got[key], label, got)
+		}
+	}
+}
+
 func TestBuildWebsiteProductsAndHomepage(t *testing.T) {
 	repo := t.TempDir()
 	productZh := `---
