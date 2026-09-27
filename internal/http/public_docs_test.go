@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +23,9 @@ func TestPublicDocsRoutes(t *testing.T) {
 	mustWriteFile(t, filepath.Join(repoPath, "docs", "navigation.zh.yaml"), "title: 中文文档\ndescription: 中文导航\nsections:\n  - title: 开始使用\n    items:\n      - title: 欢迎页\n        href: /docs/guide/overview\n")
 	mustWriteFile(t, filepath.Join(repoPath, "docs", "guide", "overview.md"), "# Overview\n\nGuide body.")
 	mustWriteFile(t, filepath.Join(repoPath, "docs", "guide", "overview.zh.md"), "---\nslug: overview\nlang: zh\ntitle: 欢迎页\ndescription: 中文页面\n---\n# 欢迎页\n\n中文内容。")
+	for index := 0; index < 51; index++ {
+		mustWriteFile(t, filepath.Join(repoPath, "content", "00-global", "essays", fmt.Sprintf("post-%02d.md", index)), fmt.Sprintf("---\ntitle: Post %02d\n---\n# Post %02d\n\nContent.", index, index))
+	}
 	if err := os.MkdirAll(filepath.Join(repoPath, "content"), 0o755); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
@@ -130,6 +135,28 @@ func TestPublicDocsRoutes(t *testing.T) {
 		body := rec.Body.String()
 		if !strings.Contains(body, `"href":"/docs/guide/overview"`) || !strings.Contains(body, `"title":"Overview"`) {
 			t.Fatalf("expected searchable document result, got %q", body)
+		}
+	})
+
+	t.Run("returns the complete default-language blog snapshot beyond the legacy page cap", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/blogs?page=1&pageSize=500&lang=default", nil)
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rec.Code)
+		}
+		var listing struct {
+			Posts      []struct{} `json:"posts"`
+			PageSize   int        `json:"pageSize"`
+			Total      int        `json:"total"`
+			TotalPages int        `json:"totalPages"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &listing); err != nil {
+			t.Fatalf("decode blog listing: %v", err)
+		}
+		if listing.Total != 51 || len(listing.Posts) != 51 || listing.PageSize != 500 || listing.TotalPages != 1 {
+			t.Fatalf("expected all 51 posts in one default-language page, got total=%d posts=%d pageSize=%d totalPages=%d", listing.Total, len(listing.Posts), listing.PageSize, listing.TotalPages)
 		}
 	})
 
