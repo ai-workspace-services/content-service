@@ -143,14 +143,26 @@ type WebsiteShowcase struct {
 	Reverse     bool   `json:"reverse,omitempty" yaml:"reverse,omitempty"`
 }
 
+type WebsiteSolutionLink struct {
+	Label string `json:"label" yaml:"label"`
+	Href  string `json:"href" yaml:"href"`
+}
+
+type WebsiteSolutionGroup struct {
+	Title       string                `json:"title" yaml:"title"`
+	Description string                `json:"description,omitempty" yaml:"description,omitempty"`
+	Links       []WebsiteSolutionLink `json:"links" yaml:"links"`
+}
+
 type WebsiteProduct struct {
-	Slug       string            `json:"slug"`
-	Language   string            `json:"language"`
-	Hero       WebsiteHero       `json:"hero"`
-	Wizard     *WebsiteWizard    `json:"wizard,omitempty"`
-	Showcases  []WebsiteShowcase `json:"showcases"`
-	SourcePath string            `json:"sourcePath"`
-	UpdatedAt  string            `json:"updatedAt,omitempty"`
+	Slug       string                 `json:"slug"`
+	Language   string                 `json:"language"`
+	Hero       WebsiteHero            `json:"hero"`
+	Wizard     *WebsiteWizard         `json:"wizard,omitempty"`
+	Showcases  []WebsiteShowcase      `json:"showcases"`
+	Solutions  []WebsiteSolutionGroup `json:"solutions,omitempty"`
+	SourcePath string                 `json:"sourcePath"`
+	UpdatedAt  string                 `json:"updatedAt,omitempty"`
 }
 
 type WebsiteProductSummary struct {
@@ -201,4 +213,3 @@ type ApplyResult struct {
 	Bytes      int          `json:"bytes"`
 	Reload     ReloadResult `json:"reload"`
 }
-

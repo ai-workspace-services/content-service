@@ -350,9 +350,10 @@ func discoverBlogCategories(root string) (map[string]BlogCategory, error) {
 }
 
 type rawProductFrontmatter struct {
-	Hero      WebsiteHero       `yaml:"hero"`
-	Wizard    *WebsiteWizard    `yaml:"wizard,omitempty"`
-	Showcases []WebsiteShowcase `yaml:"showcases"`
+	Hero      WebsiteHero            `yaml:"hero"`
+	Wizard    *WebsiteWizard         `yaml:"wizard,omitempty"`
+	Showcases []WebsiteShowcase      `yaml:"showcases"`
+	Solutions []WebsiteSolutionGroup `yaml:"solutions,omitempty"`
 }
 
 func (i *Indexer) buildWebsiteProducts() ([]WebsiteProduct, map[string]WebsiteProduct, error) {
@@ -425,6 +426,7 @@ func (i *Indexer) buildWebsiteProducts() ([]WebsiteProduct, map[string]WebsitePr
 				Hero:       rawData.Hero,
 				Wizard:     rawData.Wizard,
 				Showcases:  rawData.Showcases,
+				Solutions:  rawData.Solutions,
 				SourcePath: filepath.ToSlash(sourcePath),
 				UpdatedAt:  updatedAt,
 			}

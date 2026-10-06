@@ -83,6 +83,12 @@ showcases:
     description: "专线直连"
     icon: "zap"
     image: "/marketing/xconnect/product.png"
+solutions:
+  - title: "公开架构"
+    description: "从文档到仓库"
+    links:
+      - label: "Platform Ops Toolkit"
+        href: "https://github.com/ai-workspace-infra/platform-ops-toolkit"
 ---
 `
 	productEn := `---
@@ -128,6 +134,10 @@ hero:
 	}
 	if len(prodZh.Showcases) != 1 || prodZh.Showcases[0].Icon != "zap" {
 		t.Errorf("unexpected showcases: %+v", prodZh.Showcases)
+	}
+	if len(prodZh.Solutions) != 1 || len(prodZh.Solutions[0].Links) != 1 ||
+		prodZh.Solutions[0].Links[0].Href != "https://github.com/ai-workspace-infra/platform-ops-toolkit" {
+		t.Errorf("unexpected solutions: %+v", prodZh.Solutions)
 	}
 
 	// Verify homepage
