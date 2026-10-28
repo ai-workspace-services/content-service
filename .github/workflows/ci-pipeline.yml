@@ -60,6 +60,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Test Main image evidence contract
+        run: python3 .github/scripts/test_write_main_image_build.py
       - name: Resolve pipeline flags
         id: flags
         env:
@@ -86,6 +88,7 @@ jobs:
       service_image_tag: ${{ steps.service_ref.outputs.image_tag }}
     steps:
       - name: Check out repository
+        id: source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.source_ref || github.ref }}
@@ -145,6 +148,7 @@ jobs:
         run: .github/scripts/resolve-image-ref.sh
 
       - name: Build and push service image
+        id: publish
         uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
         with:
           context: .
@@ -153,6 +157,24 @@ jobs:
           push: ${{ needs.prep.outputs.push_image == 'true' }}
           tags: ${{ steps.service_meta.outputs.tags }}
           labels: ${{ steps.service_meta.outputs.labels }}
+
+      - name: Record immutable Main image evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.prep.outputs.push_image == 'true'
+        env:
+          CHECKED_OUT_SHA: ${{ steps.source.outputs.commit }}
+          IMAGE_REPOSITORY: ${{ steps.service_image.outputs.repo }}
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+          EVIDENCE_PATH: ${{ runner.temp }}/main-image-build.json
+        run: python3 .github/scripts/write-main-image-build.py
+
+      - name: Retain immutable Main image evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.prep.outputs.push_image == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: content-main-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/main-image-build.json
+          if-no-files-found: error
+          retention-days: 30
 
   publish_artifact_registry:
     name: Publish Cloud Run image to Artifact Registry
