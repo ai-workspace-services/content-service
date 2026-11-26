@@ -7,9 +7,13 @@ import (
 
 	"docs.svc.plus/internal/config"
 	httpapi "docs.svc.plus/internal/http"
+	"docs.svc.plus/internal/observability"
 )
 
 func main() {
+	stopTracing, ddEnabled := observability.ConfigureDDTrace("web-saas-content")
+	defer stopTracing()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("load config: %v", err)
@@ -35,7 +39,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           app.Routes(),
+		Handler:           observability.WrapHTTPHandler(app.Routes(), "web-saas-content", "content.request", ddEnabled),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
