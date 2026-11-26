@@ -1,14 +1,20 @@
+//go:build !no_apm
+
 package observability
 
 import (
+	"database/sql"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
+	sqltrace "github.com/DataDog/dd-trace-go/contrib/database/sql/v2"
 	httptrace "github.com/DataDog/dd-trace-go/contrib/net/http/v2"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/jackc/pgx/v5/stdlib"
 )
 
 func firstNonEmpty(values ...string) string {
@@ -76,4 +82,17 @@ func WrapHTTPHandler(handler http.Handler, defaultService, operation string, ena
 		return handler
 	}
 	return httptrace.WrapHandler(handler, DDTraceServiceName(defaultService), operation)
+}
+
+var registerDDPGXOnce sync.Once
+
+// OpenPostgres opens a PostgreSQL connection instrumented with dd-trace-go when enabled.
+func OpenPostgres(dsn string) (*sql.DB, error) {
+	if !DDTraceEnabled() {
+		return sql.Open("pgx", dsn)
+	}
+	registerDDPGXOnce.Do(func() {
+		sqltrace.Register("dd-pgx", &stdlib.Driver{}, sqltrace.WithService("postgres"))
+	})
+	return sqltrace.Open("dd-pgx", dsn)
 }

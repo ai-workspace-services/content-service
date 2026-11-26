@@ -2,9 +2,9 @@ package dbprobe
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 
+	"docs.svc.plus/internal/observability"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -16,7 +16,7 @@ func Ping(ctx context.Context, uri string) error {
 	if strings.TrimSpace(uri) == "" {
 		return nil
 	}
-	db, err := sql.Open("pgx", uri)
+	db, err := observability.OpenPostgres(uri)
 	if err != nil {
 		return err
 	}
